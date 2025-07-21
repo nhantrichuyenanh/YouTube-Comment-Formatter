@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Comment Formatter Hotkeys",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Use Ctrl / ⌘ + B / I / S to wrap your YouTube comment text in *bold*, -italic- or _strikethrough_.",
   "icons": {
     "16": "icons/icon16.png",
@@ -11,7 +11,7 @@
   },
   "host_permissions": [
     "https://www.youtube.com/watch?*",
-    "https://www.youtube.com/shorts/*", 
+    "https://www.youtube.com/shorts/*",
     "https://www.youtube.com/channel/*/community?*"
   ],
   "content_scripts": [

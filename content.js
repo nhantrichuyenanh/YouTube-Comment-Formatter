@@ -97,18 +97,6 @@
         return;
       }
 
-      // undo / redo
-      if (!e.shiftKey && key.toLowerCase() === "z") {
-        e.preventDefault();
-        document.execCommand("undo");
-        return;
-      }
-      if (!e.shiftKey && key.toLowerCase() === "y") {
-        e.preventDefault();
-        document.execCommand("redo");
-        return;
-      }
-
       // bold / italic / strikethrough
       if (!e.shiftKey) {
         const lk = key.toLowerCase();
