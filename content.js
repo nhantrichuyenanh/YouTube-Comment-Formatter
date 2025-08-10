@@ -283,63 +283,70 @@ function enhanceCommentBox(commentBox) {
 
   let previewToggleBtn = null;
 
-  function updatePreview() {
-    const text = getTextContentWithLineBreaks(input).trim();
-    if (!text) {
-      previewBody.innerHTML = '';
-      if (!currentSettings.autoPreview && previewContainer.style.display === 'block') {
-        previewContainer.style.transform = 'translateY(-6px)';
-        previewContainer.style.opacity = '0';
-        setTimeout(() => { previewContainer.style.display = 'none'; }, 200);
-      }
-      return;
+function updatePreview() {
+  const rawText = getTextContent(input).trim();
+  if (!rawText) {
+    previewBody.innerHTML = '';
+    if (!currentSettings.autoPreview && previewContainer.style.display === 'block') {
+      previewContainer.style.transform = 'translateY(-6px)';
+      previewContainer.style.opacity = '0';
+      setTimeout(() => { previewContainer.style.display = 'none'; }, 200);
     }
-    if (text.includes('<img')) {
-      previewBody.innerHTML = '';
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = text;
-      const images = tempDiv.querySelectorAll('img');
-      images.forEach(img => {
-        if (img.classList.contains('emoji') || img.src.includes('emoji') || img.alt.match(/^[\u{1F000}-\u{1F9FF}]$/u)) {
-          previewBody.appendChild(img.cloneNode(true));
-        }
-      });
-      const textContent = tempDiv.textContent || tempDiv.innerText;
-      if (textContent.trim()) {
-        const textSpan = document.createElement('span');
-        textSpan.innerHTML = formatText(textContent);
-        previewBody.appendChild(textSpan);
-      }
-    } else {
-      previewBody.innerHTML = formatText(text);
-    }
+    return;
   }
 
-  function getTextContentWithLineBreaks(element) {
-    let text = '';
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ALL, null, false);
-    let node;
-    while ((node = walker.nextNode())) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        text += node.textContent;
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const tname = node.tagName.toLowerCase();
-        if (tname === 'br') {
-          text += '\n';
-        } else if (tname === 'img') {
-          if (node.classList.contains('emoji') || node.src.includes('emoji') || node.alt.match(/^[\u{1F000}-\u{1F9FF}]$/u)) {
-            const imgClone = node.cloneNode(true);
-            text += imgClone.outerHTML;
-          } else if (node.alt) {
-            text += node.alt;
-          }
-        } else if (tname === 'div' && node !== element) {
-          if (text && !text.endsWith('\n')) text += '\n';
+  let formattedText = formatText(rawText);
+
+  if (input._emojiMap && input._emojiMap.size > 0) {
+    input._emojiMap.forEach((emojiElement, emojiId) => {
+      const placeholder = `{{${emojiId}}}`;
+      const regex = new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g');
+      formattedText = formattedText.replace(regex, emojiElement.outerHTML);
+    });
+  }
+
+  previewBody.innerHTML = formattedText;
+}
+
+function getTextContent(element) {
+  let text = '';
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_ALL, null, false);
+  let node;
+
+  if (!element._emojiMap) element._emojiMap = new Map();
+
+  while ((node = walker.nextNode())) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const tname = node.tagName.toLowerCase();
+      if (tname === 'br') {
+        text += '\n';
+      } else if (tname === 'img') {
+        const isCustomEmoji = node.classList.contains('emoji') ||
+                             node.src.includes('emoji') ||
+                             node.src.includes('youtube.com/s/gaming/emoji') ||
+                             node.src.includes('yt3.ggpht.com') ||
+                             node.hasAttribute('data-emoji') ||
+                             node.hasAttribute('data-emoji-id') ||
+                             node.classList.contains('yt-emoji') ||
+                             node.alt.match(/^[\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]$/u);
+
+        if (isCustomEmoji) {
+          const emojiId = 'EMOJI_' + Math.random().toString(36).substr(2, 9);
+          text += `{{${emojiId}}}`;
+
+          element._emojiMap.set(emojiId, node.cloneNode(true));
+        } else if (node.alt) {
+          text += node.alt;
         }
+      } else if (tname === 'div' && node !== element) {
+        if (text && !text.endsWith('\n')) text += '\n';
       }
     }
-    return text;
   }
+  return text;
+}
 
   function togglePreview() {
     manuallyToggled = true;
@@ -395,7 +402,7 @@ function enhanceCommentBox(commentBox) {
   });
   inputObserver.observe(input, { childList: true, subtree: true, characterData: true });
 
-  function createBtn({ label, classes = [], onClick }) {
+  function createButton({ label, classes = [], onClick }) {
     const btn = document.createElement('button');
     btn.innerHTML =  label;
     btn.type = 'button';
@@ -433,7 +440,7 @@ function enhanceCommentBox(commentBox) {
 
     // insert format buttons next to emoji button
     configs.reverse().forEach(cfg => {
-      const btn = createBtn(cfg);
+      const btn = createButton(cfg);
       emojiButton.insertAdjacentElement('afterend', btn);
       if (cfg.classes.includes('yt-comments-enhanced-preview-toggle')) {
         previewToggleBtn = btn;
@@ -489,26 +496,26 @@ function updateAllCommentBoxesButtons() {
 function formatText(input) {
   let output = input;
 
-  // triple combinations
-  output = output.replace(/(^|\s|\n)\*_-([^-]+?)-_\*(?=\s|$|\n)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
-  output = output.replace(/(^|\s|\n)\*-_([^_]+?)_-\*(?=\s|$|\n)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
-  output = output.replace(/(^|\s|\n)_\*-([^-]+?)-\*_(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
-  output = output.replace(/(^|\s|\n)_-\*([^*]+?)\*-_(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span></span>');
-  output = output.replace(/(^|\s|\n)-\*_([^_]+?)_\*-(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
-  output = output.replace(/(^|\s|\n)-_\*([^*]+?)\*_-(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span></span>');
+ // triple combinations
+  output = output.replace(/(^|\s)\*_-([^-\n]*?)-_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
+  output = output.replace(/(^|\s)\*-_([^_\n]*?)_-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
+  output = output.replace(/(^|\s)_\*-([^-\n]*?)-\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
+  output = output.replace(/(^|\s)_-\*([^*\n]*?)\*-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span></span>');
+  output = output.replace(/(^|\s)-\*_([^_\n]*?)_\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
+  output = output.replace(/(^|\s)-_\*([^*\n]*?)\*_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span></span>');
 
   // double combinations
-  output = output.replace(/(^|\s|\n)\*_([^_]+?)_\*(?=\s|$|\n)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span>');
-  output = output.replace(/(^|\s|\n)_\*([^*]+?)\*_(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span>');
-  output = output.replace(/(^|\s|\n)\*-([^-]+?)-\*(?=\s|$|\n)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
-  output = output.replace(/(^|\s|\n)-\*([^*]+?)\*-(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span>');
-  output = output.replace(/(^|\s|\n)_-([^-]+?)-_(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
-  output = output.replace(/(^|\s|\n)-_([^_]+?)_-(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span>');
+  output = output.replace(/(^|\s)\*_([^_\n]*?)_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span>');
+  output = output.replace(/(^|\s)_\*([^*\n]*?)\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span>');
+  output = output.replace(/(^|\s)\*-([^-\n]*?)-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
+  output = output.replace(/(^|\s)-\*([^*\n]*?)\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span>');
+  output = output.replace(/(^|\s)_-([^-\n]*?)-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
+  output = output.replace(/(^|\s)-_([^_\n]*?)_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span>');
 
-  // single formatting
-  output = output.replace(/(^|\s|\n)\*([^*]+?)\*(?=\s|$|\n)/g, '$1<span style="font-weight:500;">$2</span>');
-  output = output.replace(/(^|\s|\n)_([^_]+?)_(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
-  output = output.replace(/(^|\s|\n)-([^-]+?(-[^-\s]+)*?)-(?=\s|$|\n)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
+  // single combination
+  output = output.replace(/(^|\s)\*([^*\n]*?)\*(?=\s|$)/g, '$1<span style="font-weight:500;">$2</span>');
+  output = output.replace(/(^|\s)_([^_\n]*?)_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
+  output = output.replace(/(^|\s)-([^-\n]*?(-[^-\s\n]+)*?)-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
 
   // links (not perfect but works ig)
   output = output.replace(/(?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\/\S*)?/gi, (url) => {
@@ -519,7 +526,7 @@ function formatText(input) {
   return output.trim();
 }
 
-function initialScanForCommentBoxes() {
+function scan() {
   try {
     const boxes = document.querySelectorAll('#commentbox');
     boxes.forEach(enhanceCommentBox);
@@ -527,4 +534,4 @@ function initialScanForCommentBoxes() {
   }
 }
 
-initialScanForCommentBoxes();
+scan();
