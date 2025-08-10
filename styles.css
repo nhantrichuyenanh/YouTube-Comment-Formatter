@@ -63,6 +63,16 @@ html[dark] {
     white-space: pre-wrap;
 }
 
+.yt-comments-enhanced-preview-container img {
+    max-width: 15px;
+    max-height: 15px;
+    width: auto;
+    height: auto;
+    display: inline;
+    vertical-align: middle;
+    margin: 0 2px;
+}
+
 .yt-comments-enhanced-clear {
     font-size: 1.8rem;
     font-weight: 300;
