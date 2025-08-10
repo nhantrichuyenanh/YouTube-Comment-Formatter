@@ -324,9 +324,7 @@ function getTextContent(element) {
         text += '\n';
       } else if (tname === 'img') {
         const isCustomEmoji = node.classList.contains('emoji') ||
-                             node.src.includes('emoji') ||
                              node.src.includes('youtube.com/s/gaming/emoji') ||
-                             node.src.includes('yt3.ggpht.com') ||
                              node.hasAttribute('data-emoji') ||
                              node.hasAttribute('data-emoji-id') ||
                              node.classList.contains('yt-emoji') ||
@@ -334,8 +332,29 @@ function getTextContent(element) {
 
         if (isCustomEmoji) {
           const emojiId = 'EMOJI_' + Math.random().toString(36).substr(2, 9);
-          text += `{{${emojiId}}}`;
 
+          const prevSibling = node.previousSibling;
+          const nextSibling = node.nextSibling;
+          let prefix = '';
+          let suffix = '';
+
+          if (prevSibling && prevSibling.nodeType === Node.TEXT_NODE) {
+            const prevText = prevSibling.textContent;
+            const formatSymbols = /[\*_\-]$/;
+            if (formatSymbols.test(prevText)) {
+              prefix = prevText.match(formatSymbols)[0];
+            }
+          }
+
+          if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+            const nextText = nextSibling.textContent;
+            const formatSymbols = /^[\*_\-]/;
+            if (formatSymbols.test(nextText)) {
+              suffix = nextText.match(formatSymbols)[0];
+            }
+          }
+
+          text += `${prefix}{{${emojiId}}}${suffix}`;
           element._emojiMap.set(emojiId, node.cloneNode(true));
         } else if (node.alt) {
           text += node.alt;
