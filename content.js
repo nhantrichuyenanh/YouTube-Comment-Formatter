@@ -323,12 +323,7 @@ function getTextContent(element) {
       if (tname === 'br') {
         text += '\n';
       } else if (tname === 'img') {
-        const isCustomEmoji = node.classList.contains('emoji') ||
-                             node.src.includes('youtube.com/s/gaming/emoji') ||
-                             node.hasAttribute('data-emoji') ||
-                             node.hasAttribute('data-emoji-id') ||
-                             node.classList.contains('yt-emoji') ||
-                             node.alt.match(/^[\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]$/u);
+        const isCustomEmoji = node.classList.contains('emoji') || node.src.includes('youtube.com/s/gaming/emoji')
 
         if (isCustomEmoji) {
           const emojiId = 'EMOJI_' + Math.random().toString(36).substr(2, 9);
@@ -535,6 +530,13 @@ function formatText(input) {
   output = output.replace(/(^|\s)\*([^*\n]*?)\*(?=\s|$)/g, '$1<span style="font-weight:500;">$2</span>');
   output = output.replace(/(^|\s)_([^_\n]*?)_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
   output = output.replace(/(^|\s)-([^-\n]*?(-[^-\s\n]+)*?)-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
+
+  // timestamps
+  if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
+    output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
+      return match.replace(timestamp, `<span style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`);
+    });
+  }
 
   // links (not perfect but works ig)
   output = output.replace(/(?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\/\S*)?/gi, (url) => {
