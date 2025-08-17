@@ -17,20 +17,22 @@ commentObserver.observe(document.body, {
   subtree: true
 });
 
-let currentSettings = {
+let defaultSettings = {
   enableHotkeys: true,
   showButtons: true,
   autoPreview: false
 };
 
-chrome.storage.sync.get(currentSettings, (res) => {
-  currentSettings = Object.assign({}, currentSettings, res);
+// loads user preferences
+browser.storage.sync.get(defaultSettings, (res) => {
+  defaultSettings = Object.assign({}, defaultSettings, res);
   updateAllCommentBoxesButtons();
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+// listens for changes in options menu
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.action === 'updateSettings' && message.settings) {
-    currentSettings = Object.assign({}, currentSettings, message.settings);
+    defaultSettings = Object.assign({}, defaultSettings, message.settings);
     updateAllCommentBoxesButtons();
   }
 });
@@ -226,7 +228,7 @@ function clearAllFormattingInEditable(editable) {
   }
 
   document.addEventListener('keydown', (e) => {
-    if (!currentSettings.enableHotkeys) return;
+    if (!defaultSettings.enableHotkeys) return;
 
     if (!selectionIsInsideCommentBox()) return;
 
@@ -287,7 +289,7 @@ function updatePreview() {
   const rawText = getTextContent(input).trim();
   if (!rawText) {
     previewBody.innerHTML = '';
-    if (!currentSettings.autoPreview && previewContainer.style.display === 'block') {
+    if (!defaultSettings.autoPreview && previewContainer.style.display === 'block') {
       previewContainer.style.transform = 'translateY(-6px)';
       previewContainer.style.opacity = '0';
       setTimeout(() => { previewContainer.style.display = 'none'; }, 200);
@@ -313,6 +315,7 @@ function getTextContent(element) {
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_ALL, null, false);
   let node;
 
+  // preserves custom YouTube emojis
   if (!element._emojiMap) element._emojiMap = new Map();
 
   while ((node = walker.nextNode())) {
@@ -383,7 +386,7 @@ function getTextContent(element) {
     const content = input.innerHTML.trim();
     const hasText = content !== '' && content !== '<br>' && content.length > 0;
     previewToggleBtn.style.display = hasText ? 'inline-flex' : 'none';
-    if (currentSettings.autoPreview && hasText && !manuallyToggled) {
+    if (defaultSettings.autoPreview && hasText && !manuallyToggled) {
       if (previewContainer.style.display === 'none') togglePreview();
     } else if (!hasText) {
       manuallyToggled = false; // reset when no text
@@ -463,7 +466,7 @@ function getTextContent(element) {
       }
     });
 
-    setButtonsVisibility(currentSettings.showButtons);
+    setButtonsVisibility(defaultSettings.showButtons);
   }
 
   function setButtonsVisibility(show) {
@@ -483,7 +486,7 @@ function getTextContent(element) {
   addButtonsIfMissing();
 
   // show preview automatically if auto preview is enabled
-  if (currentSettings.autoPreview && input.textContent && input.textContent.trim().length > 0) {
+  if (defaultSettings.autoPreview && input.textContent && input.textContent.trim().length > 0) {
     previewContainer.style.display = 'block';
     setTimeout(() => {
       previewContainer.style.transform = 'translateY(0)';
@@ -498,7 +501,7 @@ function updateAllCommentBoxesButtons() {
   boxes.forEach(cb => {
     if (cb.dataset.enhanced === 'true') {
       if (typeof cb._ytEnhance_addButtonsIfMissing === 'function') cb._ytEnhance_addButtonsIfMissing();
-      if (typeof cb._ytEnhance_setButtonsVisibility === 'function') cb._ytEnhance_setButtonsVisibility(currentSettings.showButtons);
+      if (typeof cb._ytEnhance_setButtonsVisibility === 'function') cb._ytEnhance_setButtonsVisibility(defaultSettings.showButtons);
       const input = cb.querySelector('#contenteditable-root');
       if (input) {
         input.dispatchEvent(new Event('input', { bubbles: true }));
