@@ -30,12 +30,12 @@ html[dark] {
 }
 
 .yt-comments-enhanced-buttons:hover {
-    background-color: var(--yt-spec-button-chip-background-hover);
+    background-color: var(--yt-spec-button-chip-background-hover);
 }
 
 .yt-comments-enhanced-buttons:active {
-    background-color: var(--yt-spec-button-chip-background-hover);
-    filter: brightness(2);
+    background-color: var(--yt-spec-button-chip-background-hover);
+    filter: brightness(2);
 }
 
 .yt-comments-enhanced-preview-container {
@@ -84,5 +84,4 @@ html[dark] {
 
 .yt-comments-enhanced-buttons--hidden {
     display: none !important;
-
 }
