@@ -210,6 +210,37 @@ function clearAllFormattingInEditable(editable) {
   editable.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+function insertCurrentVideoTimestamp(input) {
+  const video = document.querySelector("video");
+  if (!video) return;
+
+  const currentTime = Math.floor(video.currentTime);
+  const hours = Math.floor(currentTime / 3600);
+  const minutes = Math.floor((currentTime % 3600) / 60);
+  const seconds = currentTime % 60;
+
+  const formattedTime =
+    (hours > 0
+      ? [hours, String(minutes).padStart(2, "0"), String(seconds).padStart(2, "0")]
+      : [minutes, String(seconds).padStart(2, "0")]
+    ).join(":");
+
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  const tsNode = document.createTextNode(formattedTime);
+
+  range.insertNode(tsNode);
+  range.setStartAfter(tsNode);
+  range.setEndAfter(tsNode);
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 (function installHotkeys() {
   const WRAP = { b: '*', i: '_', s: '-' };
 
@@ -285,85 +316,113 @@ function enhanceCommentBox(commentBox) {
 
   let previewToggleBtn = null;
 
-function updatePreview() {
-  const rawText = getTextContent(input).trim();
-  if (!rawText) {
-    previewBody.innerHTML = '';
-    if (!defaultSettings.autoPreview && previewContainer.style.display === 'block') {
-      previewContainer.style.transform = 'translateY(-6px)';
-      previewContainer.style.opacity = '0';
-      setTimeout(() => { previewContainer.style.display = 'none'; }, 200);
+  function updatePreview() {
+    const rawText = getTextContent(input).trim();
+    if (!rawText) {
+      previewBody.innerHTML = '';
+      if (!defaultSettings.autoPreview && previewContainer.style.display === 'block') {
+        previewContainer.style.transform = 'translateY(-6px)';
+        previewContainer.style.opacity = '0';
+        setTimeout(() => { previewContainer.style.display = 'none'; }, 200);
+      }
+      return;
     }
-    return;
+
+    let formattedText = formatText(rawText);
+
+    if (input._emojiMap && input._emojiMap.size > 0) {
+      input._emojiMap.forEach((emojiElement, emojiId) => {
+        const placeholder = `{{${emojiId}}}`;
+        const regex = new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g');
+        formattedText = formattedText.replace(regex, emojiElement.outerHTML);
+      });
+    }
+
+    previewBody.innerHTML = formattedText;
   }
 
-  let formattedText = formatText(rawText);
-
-  if (input._emojiMap && input._emojiMap.size > 0) {
-    input._emojiMap.forEach((emojiElement, emojiId) => {
-      const placeholder = `{{${emojiId}}}`;
-      const regex = new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g');
-      formattedText = formattedText.replace(regex, emojiElement.outerHTML);
-    });
+  function parseTimestampToSeconds(ts) {
+    const parts = ts.trim().split(':').map(n => parseInt(n, 10));
+    if (parts.some(Number.isNaN)) return NaN;
+    return parts.length === 3
+      ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+      : parts[0] * 60 + parts[1];
   }
 
-  previewBody.innerHTML = formattedText;
-}
+  function handleTimestampActivate(e) {
+    const base = e.target && (e.target.nodeType === Node.ELEMENT_NODE ? e.target : e.target.parentElement);
+    const tEl = base && base.closest ? base.closest('.yt-enhanced-timestamp') : null;
+    if (!tEl) return;
 
-function getTextContent(element) {
-  let text = '';
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_ALL, null, false);
-  let node;
+    e.preventDefault();
+    e.stopPropagation();
 
-  // preserves custom YouTube emojis
-  if (!element._emojiMap) element._emojiMap = new Map();
+    const seconds = parseTimestampToSeconds(tEl.dataset.timestamp || '');
+    if (!Number.isFinite(seconds)) return;
 
-  while ((node = walker.nextNode())) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent;
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const tname = node.tagName.toLowerCase();
-      if (tname === 'br') {
-        text += '\n';
-      } else if (tname === 'img') {
-        const isCustomEmoji = node.classList.contains('emoji') || node.src.includes('youtube.com/s/gaming/emoji')
+    const video = document.querySelector('video');
+    if (video) {
+      video.currentTime = seconds;
+      video.play();
+    }
+  }
 
-        if (isCustomEmoji) {
-          const emojiId = 'EMOJI_' + Math.random().toString(36).substr(2, 9);
+  previewContainer.addEventListener('click', handleTimestampActivate, true);
 
-          const prevSibling = node.previousSibling;
-          const nextSibling = node.nextSibling;
-          let prefix = '';
-          let suffix = '';
+  function getTextContent(element) {
+    let text = '';
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ALL, null, false);
+    let node;
 
-          if (prevSibling && prevSibling.nodeType === Node.TEXT_NODE) {
-            const prevText = prevSibling.textContent;
-            const formatSymbols = /[\*_\-]$/;
-            if (formatSymbols.test(prevText)) {
-              prefix = prevText.match(formatSymbols)[0];
+    // preserves custom YouTube emojis
+    if (!element._emojiMap) element._emojiMap = new Map();
+
+    while ((node = walker.nextNode())) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        text += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const tname = node.tagName.toLowerCase();
+        if (tname === 'br') {
+          text += '\n';
+        } else if (tname === 'img') {
+          const isCustomEmoji = node.classList.contains('emoji') || node.src.includes('youtube.com/s/gaming/emoji')
+
+          if (isCustomEmoji) {
+            const emojiId = 'EMOJI_' + Math.random().toString(36).substr(2, 9);
+
+            const prevSibling = node.previousSibling;
+            const nextSibling = node.nextSibling;
+            let prefix = '';
+            let suffix = '';
+
+            if (prevSibling && prevSibling.nodeType === Node.TEXT_NODE) {
+              const prevText = prevSibling.textContent;
+              const formatSymbols = /[\*_\-]$/;
+              if (formatSymbols.test(prevText)) {
+                prefix = prevText.match(formatSymbols)[0];
+              }
             }
-          }
 
-          if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
-            const nextText = nextSibling.textContent;
-            const formatSymbols = /^[\*_\-]/;
-            if (formatSymbols.test(nextText)) {
-              suffix = nextText.match(formatSymbols)[0];
+            if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+              const nextText = nextSibling.textContent;
+              const formatSymbols = /^[\*_\-]/;
+              if (formatSymbols.test(nextText)) {
+                suffix = nextText.match(formatSymbols)[0];
+              }
             }
-          }
 
-          text += `${prefix}{{${emojiId}}}${suffix}`;
-          element._emojiMap.set(emojiId, node.cloneNode(true));
-        } else if (node.alt) {
-          text += node.alt;
+            text += `${prefix}{{${emojiId}}}${suffix}`;
+            element._emojiMap.set(emojiId, node.cloneNode(true));
+          } else if (node.alt) {
+            text += node.alt;
+          }
+        } else if (tname === 'div' && node !== element) {
+          if (text && !text.endsWith('\n')) text += '\n';
         }
-      } else if (tname === 'div' && node !== element) {
-        if (text && !text.endsWith('\n')) text += '\n';
       }
     }
+    return text;
   }
-  return text;
-}
 
   function togglePreview() {
     manuallyToggled = true;
@@ -453,6 +512,7 @@ function getTextContent(element) {
       { label: '<s>S</s>', classes: ['yt-comments-enhanced-strikethrough'], onClick: () => applyWrapSymbol('-') },
       { label: '<u><i>T</i></u><sub>ₓ</sub>', classes: ['yt-comments-enhanced-clear'], onClick: () => clearAllFormattingInEditable(input) },
       { label: '🖋', classes: ['yt-comments-enhanced-preview-toggle'], onClick: () => togglePreview() },
+      { label: '⏱', classes: ['yt-comments-enhanced-timestamp'], onClick: () => insertCurrentVideoTimestamp(input) },
     ];
 
     // insert format buttons next to emoji button
@@ -537,7 +597,10 @@ function formatText(input) {
   // timestamps
   if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
     output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
-      return match.replace(timestamp, `<span style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`);
+      return match.replace(
+        timestamp,
+        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
+      );
     });
   }
 
