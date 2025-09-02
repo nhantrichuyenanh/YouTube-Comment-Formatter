@@ -367,7 +367,10 @@ function enhanceCommentBox(commentBox) {
     }
   }
 
-  previewContainer.addEventListener('click', handleTimestampActivate, true);
+  previewContainer.addEventListener('pointerdown', (e) => {
+    if (typeof e.button === 'number' && e.button !== 0) return;
+    handleTimestampActivate(e);
+  }, true);
 
   function getTextContent(element) {
     let text = '';
@@ -573,6 +576,27 @@ function updateAllCommentBoxesButtons() {
 function formatText(input) {
   let output = input;
 
+  // timestamps
+  if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
+    output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
+      return match.replace(
+        timestamp,
+        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
+      );
+    });
+  }
+
+  // links (not perfect but works ig)
+  output = output.replace(/(?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\/\S*)?/gi, (url) => {
+    const href = url.startsWith('http') ? url : `https://${url}`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">${url}</a>`;
+  });
+
+  // hashtags
+  output = output.replace(/(^|\s)#([A-Za-z0-9_]+)(?=\s|$)/g, (match, space, hashtag) => {
+    return `${space}<a href="https://www.youtube.com/hashtag/${hashtag}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">#${hashtag}</a>`;
+  });
+
  // triple combinations
   output = output.replace(/(^|\s)\*_-([^-\n]*?)-_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
   output = output.replace(/(^|\s)\*-_([^_\n]*?)_-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
@@ -593,22 +617,6 @@ function formatText(input) {
   output = output.replace(/(^|\s)\*([^*\n]*?)\*(?=\s|$)/g, '$1<span style="font-weight:500;">$2</span>');
   output = output.replace(/(^|\s)_([^_\n]*?)_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
   output = output.replace(/(^|\s)-([^-\n]*?(-[^-\s\n]+)*?)-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
-
-  // timestamps
-  if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
-    output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
-      return match.replace(
-        timestamp,
-        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
-      );
-    });
-  }
-
-  // links (not perfect but works ig)
-  output = output.replace(/(?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\/\S*)?/gi, (url) => {
-    const href = url.startsWith('http') ? url : `https://${url}`;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7; text-decoration:underline;">${url}</a>`;
-  });
 
   return output.trim();
 }
