@@ -15,13 +15,17 @@
 	},
 	"permissions": ["storage", "tabs", "activeTab"],
 	"host_permissions": [
-		"https://www.youtube.com/watch?*",
+		"https://www.youtube.com/watch*",
 		"https://www.youtube.com/shorts/*",
-		"https://www.youtube.com/channel/*/community?*"
+		"https://www.youtube.com/channel/*/community*"
 	],
 	"content_scripts": [
 		{
-			"matches": ["https://www.youtube.com/*"],
+			"matches": [
+		        "https://www.youtube.com/watch*",
+		        "https://www.youtube.com/shorts/*",
+		        "https://www.youtube.com/channel/*/community*"
+			],
 			"js": ["content.js"],
 			"css": ["styles.css"],
 			"run_at": "document_idle"
