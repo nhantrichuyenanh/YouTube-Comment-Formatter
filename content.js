@@ -581,51 +581,71 @@ function updateAllCommentBoxesButtons() {
 
 // TEXT FORMATTING //
 function formatText(input) {
-  let output = input;
+  let output = input;
 
-  // timestamps
-  if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
-    output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
-      return match.replace(
-        timestamp,
-        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
-      );
-    });
-  }
+  // when link, timestamp, and hashtag are formatted with formatting symbols, they should be formatted instead of being blue and clickable
+  const PLACEHOLDER_PREFIX = '\x00FMT';
+  const placeholders = [];
 
-  // links (not perfect but works ig)
-  output = output.replace(/(?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\/\S*)?/gi, (url) => {
-    const href = url.startsWith('http') ? url : `https://${url}`;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">${url}</a>`;
-  });
+  const fmtPattern = /(?:^|(?<=\s))(?:\*_-[^-\n]*?-_\*|\*-_[^_\n]*?_-\*|_\*-[^-\n]*?-\*_|_-\*[^*\n]*?\*-_|-\*_[^_\n]*?_\*-|-_\*[^*\n]*?\*_-|\*_[^_\n]*?_\*|_\*[^*\n]*?\*_|\*-[^-\n]*?-\*|-\*[^*\n]*?\*-|_-[^-\n]*?-_|-_[^_\n]*?_-|\*[^*\n]*?\*|_[^_\n]*?_|-[^-\n]*?(-[^-\s\n]+)*?-)(?=\s|$)/g;
 
-  // hashtags
-  output = output.replace(/(^|\s)#([A-Za-z0-9_]+)(?=\s|$)/g, (match, space, hashtag) => {
-    return `${space}<a href="https://www.youtube.com/hashtag/${hashtag}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">#${hashtag}</a>`;
-  });
+  output = output.replace(fmtPattern, (match) => {
+    const idx = placeholders.length;
+    placeholders.push(match);
+    return `${PLACEHOLDER_PREFIX}${idx}\x00`;
+  });
 
- // triple combinations
-  output = output.replace(/(^|\s)\*_-([^-\n]*?)-_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
-  output = output.replace(/(^|\s)\*-_([^_\n]*?)_-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
-  output = output.replace(/(^|\s)_\*-([^-\n]*?)-\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
-  output = output.replace(/(^|\s)_-\*([^*\n]*?)\*-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span></span>');
-  output = output.replace(/(^|\s)-\*_([^_\n]*?)_\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
-  output = output.replace(/(^|\s)-_\*([^*\n]*?)\*_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span></span>');
+  // timestamps
+  if (window.location.href.includes('/watch?v=')) { // community post don't have timestamps
+    output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
+      return match.replace(
+        timestamp,
+        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
+      );
+    });
+  }
 
-  // double combinations
-  output = output.replace(/(^|\s)\*_([^_\n]*?)_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span>');
-  output = output.replace(/(^|\s)_\*([^*\n]*?)\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span>');
-  output = output.replace(/(^|\s)\*-([^-\n]*?)-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
-  output = output.replace(/(^|\s)-\*([^*\n]*?)\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span>');
-  output = output.replace(/(^|\s)_-([^-\n]*?)-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
-  output = output.replace(/(^|\s)-_([^_\n]*?)_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span>');
+  // links (kinda overkill but idc)
+  output = output.replace(
+    /(?<!\S)((?:https?:\/\/)?(?:www\.)?(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}(?::\d{1,5})?(?:\/[^\s]*?)?)(?=[.,!?;:)\]'"]*(?:\s|$))/gi,
+    (url) => {
+      if (/^\d+\.\d+\.\d+$/.test(url)) return url;
+      const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">${url}</a>`;
+    }
+  );
 
-  // single combination
-  output = output.replace(/(^|\s)\*([^*\n]*?)\*(?=\s|$)/g, '$1<span style="font-weight:500;">$2</span>');
-  output = output.replace(/(^|\s)_([^_\n]*?)_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
-  output = output.replace(/(^|\s)-([^-\n]*?(-[^-\s\n]+)*?)-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
+  // hashtags
+  output = output.replace(/(^|\s)#([A-Za-z0-9_]+)(?=\s|$)/g, (match, space, hashtag) => {
+    return `${space}<a href="https://www.youtube.com/hashtag/${hashtag}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">#${hashtag}</a>`;
+  });
 
-  return output.trim();
+  placeholders.forEach((original, idx) => {
+    output = output.replace(`${PLACEHOLDER_PREFIX}${idx}\x00`, original);
+  });
+
+  // triple combinations
+  output = output.replace(/(^|\s)\*_-([^-\n]*?)-_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
+  output = output.replace(/(^|\s)\*-_([^_\n]*?)_-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
+  output = output.replace(/(^|\s)_\*-([^-\n]*?)-\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span></span>');
+  output = output.replace(/(^|\s)_-\*([^*\n]*?)\*-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span></span>');
+  output = output.replace(/(^|\s)-\*_([^_\n]*?)_\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span></span>');
+  output = output.replace(/(^|\s)-_\*([^*\n]*?)\*_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span></span>');
+
+  // double combinations
+  output = output.replace(/(^|\s)\*_([^_\n]*?)_\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--italicized">$2</span></span>');
+  output = output.replace(/(^|\s)_\*([^*\n]*?)\*_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span style="font-weight:500;">$2</span></span>');
+  output = output.replace(/(^|\s)\*-([^-\n]*?)-\*(?=\s|$)/g, '$1<span style="font-weight:500;"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
+  output = output.replace(/(^|\s)-\*([^*\n]*?)\*-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span style="font-weight:500;">$2</span></span>');
+  output = output.replace(/(^|\s)_-([^-\n]*?)-_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized"><span class="yt-core-attributed-string--strikethrough">$2</span></span>');
+  output = output.replace(/(^|\s)-_([^_\n]*?)_-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough"><span class="yt-core-attributed-string--italicized">$2</span></span>');
+
+  // single
+  output = output.replace(/(^|\s)\*([^*\n]*?)\*(?=\s|$)/g, '$1<span style="font-weight:500;">$2</span>');
+  output = output.replace(/(^|\s)_([^_\n]*?)_(?=\s|$)/g, '$1<span class="yt-core-attributed-string--italicized">$2</span>');
+  output = output.replace(/(^|\s)-([^-\n]*?(-[^-\s\n]+)*?)-(?=\s|$)/g, '$1<span class="yt-core-attributed-string--strikethrough">$2</span>');
+
+  return output.trim();
 }
 
 function scan() {

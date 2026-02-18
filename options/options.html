@@ -26,7 +26,7 @@
 				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 				padding: 24px;
 				width: 100%;
-				max-width: 500px;
+				max-width: 480px;
 				text-align: left;
 			}
 
@@ -35,13 +35,6 @@
 				margin-bottom: 24px;
 				padding-bottom: 16px;
 				border-bottom: 1px solid rgba(128, 128, 128, 0.2);
-			}
-
-			.header h1 {
-				font-size: 1.4rem;
-				font-weight: 600;
-				margin: 0 0 8px 0;
-				color: #15141a;
 			}
 
 			.header p {
@@ -66,8 +59,7 @@
 				margin-bottom: 12px;
 				text-align: center;
 				color: #15141a;
-				border-bottom: 1px solid rgba(128, 128, 128, 0.2);
-				padding-bottom: 8px;
+				padding-bottom: 4px;
 			}
 
 			.option-item {
@@ -85,6 +77,7 @@
 
 			.option-item input[type="checkbox"] {
 				margin: 0;
+				cursor: pointer
 			}
 
 			.subtext {
@@ -95,31 +88,34 @@
 				margin-bottom: 10px;
 			}
 
+			.subtext ul {
+				list-style-type: disc;
+				margin: 4px 0 12px 20px;
+				padding: 0;
+			}
+
+			kbd {
+			background-color: #eeeeee;
+			border-radius: 3px;
+			border: 1px solid #b4b4b4;
+			box-shadow:
+				0 1px 1px rgb(0 0 0 / 0.2),
+				0 2px 0 0 rgb(255 255 255 / 0.7) inset;
+			color: #333333;
+			display: inline-block;
+			font-size: 0.85em;
+			font-weight: bold;
+			line-height: 1;
+			padding: 2px 4px;
+			white-space: nowrap;
+			}
+
 			.info {
 				text-align: center;
 				font-size: 0.85rem;
 				color: #666;
 				line-height: 1.4;
 				margin-bottom: 12px;
-			}
-
-			.status {
-				text-align: center;
-				padding: 8px;
-				border-radius: 4px;
-				font-size: 0.9rem;
-				margin-top: 16px;
-				transition: opacity 0.3s ease;
-			}
-
-			.status.success {
-				background: #d4edda;
-				color: #155724;
-				border: 1px solid #c3e6cb;
-			}
-
-			.subtext ul {
-				list-style-type: disc;
 			}
 
 			/* DARK MODE */
@@ -132,10 +128,6 @@
 				.container {
 					background: #1c1b22;
 					border: 0.5px solid #4e4d54;
-				}
-
-				.header h1 {
-					color: #fbfbfe;
 				}
 
 				.header {
@@ -155,10 +147,13 @@
 					color: #cfcfd4;
 				}
 
-				.status.success {
-					background: #1e4620;
-					color: #4caf50;
-					border: 1px solid #2d5a2f;
+				kbd {
+					background-color: #23222b;
+					border-color: #5c5b63;
+					color: #e6e6e9;
+					box-shadow:
+						0 1px 1px rgb(0 0 0 / 0.4),
+						0 2px 0 0 rgb(255 255 255 / 0.08) inset;
 				}
 			}
 		</style>
@@ -166,10 +161,6 @@
 
 	<body>
 		<div class="container">
-			<div class="header">
-				<h1>YouTube Comment Formatter</h1>
-			</div>
-
 			<div class="columns">
 				<div class="column">
 					<div class="column-title">Hotkeys</div>
@@ -180,12 +171,12 @@
 						</label>
 					</div>
 					<div class="subtext">
-						Ctrl / ⌘ +
+						<kbd>Ctrl</kbd> / <kbd>⌘</kbd> +
 						<ul>
-							<li>B to bolden.</li>
-							<li>I to italicize.</li>
-							<li>S to strikethrough.</li>
-							<li>Spacebar or \ to remove all formatting.</li>
+							<li><kbd>B</kbd> to bolden.</li>
+							<li><kbd>I</kbd> to italicize.</li>
+							<li><kbd>S</kbd> to strikethrough.</li>
+							<li><kbd>Spacebar</kbd> or <kbd>\</kbd> to remove all formatting.</li>
 						</ul>
 					</div>
 				</div>
@@ -214,10 +205,6 @@
 
 			<div class="info">
 				Your preferences are automatically saved and will take effect immediately.
-			</div>
-
-			<div class="status" id="status" style="opacity: 0">
-				Settings saved successfully!
 			</div>
 		</div>
 

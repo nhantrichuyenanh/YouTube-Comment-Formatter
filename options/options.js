@@ -7,7 +7,6 @@ const DEFAULT_SETTINGS = {
 let enableHotkeysCheckbox;
 let showButtonsCheckbox;
 let autoPreviewCheckbox;
-let statusElement;
 
 document.addEventListener('DOMContentLoaded', initializeOptions);
 
@@ -15,7 +14,6 @@ function initializeOptions() {
   enableHotkeysCheckbox = document.getElementById('enable-hotkeys');
   showButtonsCheckbox = document.getElementById('show-buttons');
   autoPreviewCheckbox = document.getElementById('auto-preview');
-  statusElement = document.getElementById('status');
 
   loadSettings();
 
@@ -39,21 +37,7 @@ function handleSettingChange() {
     autoPreview: autoPreviewCheckbox.checked
   };
 
-  chrome.storage.sync.set(currentSettings, function() {
-    showStatusMessage('Settings saved successfully!', 'success');
-    notifyContentScripts(currentSettings);
-  });
-}
-
-function showStatusMessage(message, type) {
-  statusElement.textContent = message;
-  statusElement.className = `status ${type}`;
-  statusElement.style.opacity = '1';
-
-  // hide the status message after 2 seconds
-  setTimeout(() => {
-    statusElement.style.opacity = '0';
-  }, 2000);
+  chrome.storage.sync.set(currentSettings, function() { notifyContentScripts(currentSettings); });
 }
 
 function notifyContentScripts(settings) {
