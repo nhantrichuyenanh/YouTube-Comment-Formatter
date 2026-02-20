@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "YouTube Comment Formatter",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"author": "Nhân Trí",
 	"description": "Makes life easier by implementing buttons and hotkeys to format your YouTube comments and replies.",
 	"homepage_url": "https://github.com/nhantrichuyenanh/YouTube-Comment-Formatter",
@@ -17,14 +17,14 @@
 	"host_permissions": [
 		"https://www.youtube.com/watch*",
 		"https://www.youtube.com/shorts/*",
-		"https://www.youtube.com/channel/*/community*"
+		"https://www.youtube.com/post/*"
 	],
 	"content_scripts": [
 		{
 			"matches": [
 				"https://www.youtube.com/watch*",
 				"https://www.youtube.com/shorts/*",
-				"https://www.youtube.com/channel/*/community*"
+				"https://www.youtube.com/post/*"
 			],
 			"js": ["content.js"],
 			"css": ["styles.css"],
