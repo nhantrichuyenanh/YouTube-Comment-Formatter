@@ -600,7 +600,7 @@ function formatText(input) {
     output = output.replace(/(?:^|\s)((\d{1,2}:)?(\d{1,2}):(\d{2}))(?=\s|$)/g, (match, timestamp) => {
       return match.replace(
         timestamp,
-        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:#3ea2f7; cursor:pointer">${timestamp}</span>`
+        `<span class="yt-enhanced-timestamp" data-timestamp="${timestamp}" style="color:var(--yt-spec-call-to-action); cursor:pointer">${timestamp}</span>`
       );
     });
   }
@@ -611,13 +611,13 @@ function formatText(input) {
     (url) => {
       if (/^\d+\.\d+\.\d+$/.test(url)) return url;
       const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">${url}</a>`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--yt-spec-call-to-action)">${url}</a>`;
     }
   );
 
   // hashtags
   output = output.replace(/(^|\s)#([A-Za-z0-9_]+)(?=\s|$)/g, (match, space, hashtag) => {
-    return `${space}<a href="https://www.youtube.com/hashtag/${hashtag}" target="_blank" rel="noopener noreferrer" style="color:#3ea2f7">#${hashtag}</a>`;
+    return `${space}<a href="https://www.youtube.com/hashtag/${hashtag}" target="_blank" rel="noopener noreferrer" style="color:var(--yt-spec-call-to-action)">#${hashtag}</a>`;
   });
 
   placeholders.forEach((original, idx) => {
