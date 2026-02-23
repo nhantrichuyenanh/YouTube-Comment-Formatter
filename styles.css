@@ -30,12 +30,12 @@ html[dark] {
 }
 
 .yt-comments-enhanced-buttons:hover {
-    background-color: var(--yt-spec-button-chip-background-hover);
+    background-color: var(--yt-spec-outline);
 }
 
 .yt-comments-enhanced-buttons:active {
-    background-color: var(--yt-spec-button-chip-background-hover);
-    filter: brightness(2);
+    background-color: var(--yt-spec-outline);
+    /*I give up trying to imitate the ripple effect when button's pressed*/
 }
 
 .yt-comments-enhanced-preview-container {
